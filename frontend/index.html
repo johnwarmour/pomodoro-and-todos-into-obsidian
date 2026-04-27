@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Focus</title>
+  <style>
+    :root {
+      --bg: #f5f5f4;
+      --surface: #ffffff;
+      --border: #e7e5e4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --work: #dc2626;
+      --work-dim: #fca5a5;
+      --break: #16a34a;
+      --break-dim: #86efac;
+      --accent: #2563eb;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--text);
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
+    .header-right { display: flex; gap: 0.5rem; align-items: center; }
+
+    /* ── Layout ── */
+    .app { display: grid; grid-template-columns: 270px 1fr 270px; flex: 1; overflow: hidden; }
+    .panel { display: flex; flex-direction: column; overflow: hidden; }
+    .panel-scroll { flex: 1; overflow-y: auto; padding: 1rem; }
+    .panel-left { border-right: 1px solid var(--border); }
+    .panel-right { border-left: 1px solid var(--border); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.45rem 0.9rem; border-radius: 7px; font-size: 0.85rem;
+      font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); transition: all 0.12s;
+      white-space: nowrap; font-family: inherit;
+    }
+    .btn:hover { background: var(--bg); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { opacity: 0.88; background: var(--accent); }
+    .btn-danger { background: var(--work); color: #fff; border-color: var(--work); }
+    .btn-danger:hover { opacity: 0.88; }
+    .btn-green { background: var(--break); color: #fff; border-color: var(--break); }
+    .btn-green:hover { opacity: 0.88; }
+    .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Todos ── */
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.5rem; margin-top: 0.875rem;
+    }
+    .section-head:first-child { margin-top: 0; }
+    .section-label {
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted);
+    }
+    .badge {
+      font-size: 0.7rem; padding: 1px 6px; border-radius: 99px;
+      background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+    }
+    .add-row { display: flex; gap: 0.4rem; margin-bottom: 0.625rem; }
+    .add-row input {
+      flex: 1; padding: 0.4rem 0.65rem; border-radius: 6px;
+      border: 1px solid var(--border); font-size: 0.83rem; background: var(--bg);
+      font-family: inherit;
+    }
+    .add-row input:focus { outline: none; border-color: var(--accent); background: #fff; }
+    .todo-item {
+      display: flex; align-items: center; gap: 0.45rem;
+      padding: 0.4rem 0.3rem; border-radius: 6px; transition: background 0.1s;
+      cursor: default;
+    }
+    .todo-item:hover { background: var(--bg); }
+    .todo-item input[type=checkbox] { cursor: pointer; flex-shrink: 0; }
+    .todo-title {
+      flex: 1; font-size: 0.85rem; line-height: 1.35;
+      cursor: default; word-break: break-word;
+    }
+    .todo-title.done { text-decoration: line-through; color: var(--muted); }
+    .todo-actions { display: none; gap: 0.2rem; flex-shrink: 0; }
+    .todo-item:hover .todo-actions { display: flex; }
+    .icon-btn {
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      padding: 2px 4px; border-radius: 4px; font-size: 0.75rem; font-family: inherit;
+    }
+    .icon-btn:hover { color: var(--accent); background: var(--border); }
+    .icon-btn.del:hover { color: var(--work); }
+
+    /* ── Timer panel ── */
+    .timer-panel {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 1.25rem; padding: 1.5rem;
+    }
+    .timer-ring { position: relative; flex-shrink: 0; }
+    .timer-ring svg { display: block; }
+    .timer-center {
+      position: absolute; inset: 0; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+    }
+    .timer-time {
+      font-size: 2.75rem; font-weight: 700; font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em; line-height: 1;
+    }
+    .timer-phase {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--muted); margin-top: 4px;
+    }
+    .timer-controls { display: flex; gap: 0.625rem; align-items: center; }
+    .task-row {
+      display: flex; gap: 0.5rem; align-items: center; width: 100%; max-width: 340px;
+    }
+    .task-row select {
+      flex: 1; padding: 0.45rem 0.65rem; border-radius: 7px;
+      border: 1px solid var(--border); font-size: 0.83rem; background: var(--surface);
+      font-family: inherit;
+    }
+    .task-row select:focus { outline: none; border-color: var(--accent); }
+    .pom-tally { font-size: 0.85rem; color: var(--muted); }
+    .pom-tally strong { color: var(--text); }
+
+    /* ── Pomodoro log ── */
+    .pom-entry {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.6rem 0.7rem; margin-bottom: 0.5rem;
+    }
+    .pom-entry-header { display: flex; justify-content: space-between; margin-bottom: 2px; }
+    .pom-entry-task { font-size: 0.83rem; font-weight: 500; }
+    .pom-entry-time { font-size: 0.72rem; color: var(--muted); }
+    .pom-entry-notes { font-size: 0.77rem; color: var(--muted); margin-top: 3px; }
+    .pom-abandoned { opacity: 0.45; }
+    .pom-abandoned .pom-entry-task::after { content: " (stopped)"; font-weight: 400; }
+
+    /* ── Modals ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+      display: none; align-items: center; justify-content: center; z-index: 50;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 1.5rem; width: 400px; box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 1.1rem; }
+    .field { margin-bottom: 0.875rem; }
+    .field label { font-size: 0.78rem; color: var(--muted); display: block; margin-bottom: 4px; }
+    .field input, .field textarea, .field select {
+      width: 100%; padding: 0.45rem 0.7rem; border-radius: 7px;
+      border: 1px solid var(--border); font-size: 0.85rem; font-family: inherit;
+    }
+    .field textarea { height: 80px; resize: vertical; }
+    .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+    .field input[type=checkbox] { width: auto; }
+    .check-row { display: flex; align-items: center; gap: 0.5rem; }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.25rem; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 1.25rem; right: 1.25rem;
+      background: #1c1917; color: #fff; padding: 0.5rem 1rem;
+      border-radius: 8px; font-size: 0.83rem; opacity: 0;
+      transition: opacity 0.25s; pointer-events: none; z-index: 100;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── Misc ── */
+    .empty { font-size: 0.8rem; color: var(--muted); text-align: center; padding: 1rem 0; }
+    hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <h1>🍅 Focus</h1>
+  <div class="header-right">
+    <button class="btn btn-sm" onclick="openSettings()">⚙ Settings</button>
+    <button class="btn btn-sm btn-primary" onclick="syncObsidian()">↑ Sync to Obsidian</button>
+  </div>
+</header>
+
+<!-- App body -->
+<div class="app">
+
+  <!-- Left: Todos -->
+  <div class="panel panel-left">
+    <div class="panel-scroll">
+      <!-- Today -->
+      <div class="section-head">
+        <span class="section-label">Today</span>
+        <span class="badge" id="today-count">0</span>
+      </div>
+      <div class="add-row">
+        <input id="today-input" placeholder="Add task for today…" onkeydown="addTodoKey(event,'today')" />
+        <button class="btn btn-sm btn-primary" onclick="addTodo('today')">+</button>
+      </div>
+      <div id="today-list"></div>
+
+      <hr class="divider" />
+
+      <!-- Backlog -->
+      <div class="section-head">
+        <span class="section-label">Backlog</span>
+        <span class="badge" id="backlog-count">0</span>
+      </div>
+      <div class="add-row">
+        <input id="backlog-input" placeholder="Add to backlog…" onkeydown="addTodoKey(event,'backlog')" />
+        <button class="btn btn-sm" onclick="addTodo('backlog')">+</button>
+      </div>
+      <div id="backlog-list"></div>
+    </div>
+  </div>
+
+  <!-- Center: Timer -->
+  <div class="panel timer-panel">
+    <!-- Ring -->
+    <div class="timer-ring">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle cx="110" cy="110" r="96" fill="none" stroke="#e7e5e4" stroke-width="10"/>
+        <circle id="ring-progress" cx="110" cy="110" r="96" fill="none"
+                stroke="#dc2626" stroke-width="10" stroke-linecap="round"
+                stroke-dasharray="603.2" stroke-dashoffset="603.2"
+                style="transform:rotate(-90deg);transform-origin:110px 110px;transition:stroke-dashoffset 1s linear, stroke 0.4s"/>
+      </svg>
+      <div class="timer-center">
+        <div class="timer-time" id="timer-display">25:00</div>
+        <div class="timer-phase" id="timer-phase">Ready</div>
+      </div>
+    </div>
+
+    <!-- Task selector -->
+    <div class="task-row" id="task-row">
+      <select id="task-select">
+        <option value="">No specific task</option>
+      </select>
+    </div>
+
+    <!-- Controls -->
+    <div class="timer-controls" id="timer-controls">
+      <button class="btn btn-primary" id="btn-start" onclick="startPomodoro()">Start</button>
+      <button class="btn btn-danger" id="btn-stop" onclick="stopPomodoro()" style="display:none">Stop</button>
+      <button class="btn btn-green" id="btn-skip" onclick="skipBreak()" style="display:none">Skip break</button>
+    </div>
+
+    <!-- Tally -->
+    <div class="pom-tally">
+      🍅 <strong id="pom-count">0</strong> pomodoros today
+    </div>
+  </div>
+
+  <!-- Right: Pomodoro log -->
+  <div class="panel panel-right">
+    <div class="panel-scroll">
+      <div class="section-head" style="margin-top:0">
+        <span class="section-label">Today's Log</span>
+      </div>
+      <div id="pom-log"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Notes modal (after work session) -->
+<div class="overlay" id="notes-modal">
+  <div class="modal">
+    <h2>🍅 Pomodoro complete!</h2>
+    <div class="field">
+      <label>What did you work on?</label>
+      <textarea id="notes-input" placeholder="Optional notes about this session…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="savePomodoro(false)">Skip notes</button>
+      <button class="btn btn-primary" onclick="savePomodoro(true)">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="settings-modal">
+  <div class="modal">
+    <h2>⚙ Settings</h2>
+    <div class="field">
+      <label>Work duration (minutes)</label>
+      <input type="number" id="s-work" min="1" max="90" value="25" />
+    </div>
+    <div class="field">
+      <label>Break duration (minutes)</label>
+      <input type="number" id="s-break" min="1" max="30" value="5" />
+    </div>
+    <div class="field">
+      <div class="check-row">
+        <input type="checkbox" id="s-auto-break" checked />
+        <label for="s-auto-break" style="margin:0">Auto-start break after work session</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Obsidian vault path</label>
+      <input type="text" id="s-vault" placeholder="/Users/you/MyVault" />
+    </div>
+    <div class="field">
+      <label>Daily notes folder</label>
+      <input type="text" id="s-folder" placeholder="Daily Notes" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+const CIRCUMFERENCE = 2 * Math.PI * 96; // ≈ 603.2
+
+let todos = [];
+let pomodoros = [];
+let settings = {};
+let timer = {
+  phase: 'idle',       // idle | working | break
+  activeId: null,      // pomodoro DB id
+  startedAt: null,     // Date object
+  totalSeconds: 0,
+  interval: null,
+};
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+async function boot() {
+  [todos, pomodoros, settings] = await Promise.all([
+    api('/api/todos'), api('/api/pomodoros/today'), api('/api/settings')
+  ]);
+  const active = await api('/api/pomodoros/active');
+  renderTodos(); renderLog(); updateTaskSelect();
+  applySettings();
+
+  if (active && !active.completed_at) {
+    // Restore active pomodoro timer
+    timer.activeId = active.id;
+    timer.startedAt = new Date(active.started_at);
+    timer.totalSeconds = active.duration_minutes * 60;
+    timer.phase = 'working';
+    startTick();
+  }
+}
+
+// ── API ──────────────────────────────────────────────────────────────────────
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: {} };
+  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    toast(err.detail || 'Request failed', true);
+    throw new Error(err.detail);
+  }
+  return res.json();
+}
+
+// ── Todos ────────────────────────────────────────────────────────────────────
+function renderTodos() {
+  const today = todos.filter(t => t.list === 'today');
+  const backlog = todos.filter(t => t.list === 'backlog');
+  document.getElementById('today-count').textContent = today.length;
+  document.getElementById('backlog-count').textContent = backlog.length;
+  document.getElementById('today-list').innerHTML = today.map(todoHTML).join('');
+  document.getElementById('backlog-list').innerHTML = backlog.map(todoHTML).join('');
+  if (!today.length) document.getElementById('today-list').innerHTML = '<div class="empty">Nothing yet</div>';
+  if (!backlog.length) document.getElementById('backlog-list').innerHTML = '<div class="empty">Nothing yet</div>';
+  updateTaskSelect();
+}
+
+function todoHTML(t) {
+  const done = t.completed ? 'done' : '';
+  const moveLabel = t.list === 'today' ? '→ Backlog' : '→ Today';
+  const moveDest = t.list === 'today' ? 'backlog' : 'today';
+  return `<div class="todo-item">
+    <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTodo(${t.id}, this.checked)" />
+    <span class="todo-title ${done}">${esc(t.title)}</span>
+    <div class="todo-actions">
+      <button class="icon-btn" onclick="moveTodo(${t.id},'${moveDest}')" title="${moveLabel}">${moveLabel}</button>
+      <button class="icon-btn del" onclick="deleteTodo(${t.id})" title="Delete">✕</button>
+    </div>
+  </div>`;
+}
+
+function addTodoKey(e, list) { if (e.key === 'Enter') addTodo(list); }
+
+async function addTodo(list) {
+  const inp = document.getElementById(list === 'today' ? 'today-input' : 'backlog-input');
+  const title = inp.value.trim();
+  if (!title) return;
+  inp.value = '';
+  const todo = await api('/api/todos', 'POST', { title, list });
+  todos.push(todo);
+  renderTodos();
+}
+
+async function toggleTodo(id, completed) {
+  const updated = await api(`/api/todos/${id}`, 'PUT', { completed });
+  todos = todos.map(t => t.id === id ? updated : t);
+  renderTodos();
+}
+
+async function moveTodo(id, dest) {
+  const updated = await api(`/api/todos/${id}`, 'PUT', { list: dest });
+  todos = todos.map(t => t.id === id ? updated : t);
+  renderTodos();
+}
+
+async function deleteTodo(id) {
+  await api(`/api/todos/${id}`, 'DELETE');
+  todos = todos.filter(t => t.id !== id);
+  renderTodos();
+}
+
+function updateTaskSelect() {
+  const sel = document.getElementById('task-select');
+  const current = sel.value;
+  const todayTodos = todos.filter(t => t.list === 'today' && !t.completed);
+  sel.innerHTML = '<option value="">No specific task</option>' +
+    todayTodos.map(t => `<option value="${t.id}" data-title="${esc(t.title)}">${esc(t.title)}</option>`).join('');
+  if (current) sel.value = current;
+}
+
+// ── Timer ────────────────────────────────────────────────────────────────────
+function applySettings() {
+  document.getElementById('timer-display').textContent =
+    formatTime((parseInt(settings.work_duration) || 25) * 60);
+}
+
+async function startPomodoro() {
+  const sel = document.getElementById('task-select');
+  const todoId = sel.value ? parseInt(sel.value) : null;
+  const todoTitle = sel.value ? sel.options[sel.selectedIndex].dataset.title : null;
+  const duration = parseInt(settings.work_duration) || 25;
+
+  const pom = await api('/api/pomodoros/start', 'POST', {
+    todo_id: todoId, todo_title: todoTitle, duration_minutes: duration
+  });
+  timer.activeId = pom.id;
+  timer.startedAt = new Date(pom.started_at);
+  timer.totalSeconds = duration * 60;
+  timer.phase = 'working';
+  startTick();
+}
+
+function stopPomodoro() {
+  if (timer.phase === 'working' && timer.activeId) {
+    api(`/api/pomodoros/${timer.activeId}/abandon`, 'PUT').then(() => {
+      pomodoros = pomodoros.filter(p => p.id !== timer.activeId);
+      // Add abandoned entry for log
+      api('/api/pomodoros/today').then(p => { pomodoros = p; renderLog(); });
+    });
+  }
+  resetTimer();
+}
+
+function skipBreak() {
+  resetTimer();
+}
+
+function startTick() {
+  clearInterval(timer.interval);
+  updateTimerUI();
+  timer.interval = setInterval(tick, 500);
+  setTimerButtons();
+}
+
+function tick() {
+  const elapsed = (Date.now() - timer.startedAt) / 1000;
+  const remaining = timer.totalSeconds - elapsed;
+
+  if (remaining <= 0) {
+    clearInterval(timer.interval);
+    if (timer.phase === 'working') onWorkComplete();
+    else if (timer.phase === 'break') onBreakComplete();
+    return;
+  }
+  renderRing(remaining, timer.totalSeconds, timer.phase);
+  document.getElementById('timer-display').textContent = formatTime(Math.ceil(remaining));
+}
+
+function updateTimerUI() { tick(); }
+
+function onWorkComplete() {
+  document.getElementById('notes-modal').classList.add('open');
+  document.getElementById('notes-input').value = '';
+}
+
+async function savePomodoro(withNotes) {
+  const notes = withNotes ? document.getElementById('notes-input').value.trim() : null;
+  document.getElementById('notes-modal').classList.remove('open');
+  const updated = await api(`/api/pomodoros/${timer.activeId}/complete`, 'PUT', { notes });
+  pomodoros = pomodoros.filter(p => p.id !== updated.id);
+  pomodoros.push(updated);
+  renderLog();
+  toast('🍅 Pomodoro saved!');
+
+  const autoBreak = settings.auto_break === 'true';
+  if (autoBreak) {
+    startBreak();
+  } else {
+    resetTimer();
+  }
+}
+
+function startBreak() {
+  const breakDur = parseInt(settings.break_duration) || 5;
+  timer.phase = 'break';
+  timer.startedAt = new Date();
+  timer.totalSeconds = breakDur * 60;
+  timer.activeId = null;
+  startTick();
+}
+
+function onBreakComplete() {
+  toast('Break over — ready for next pomodoro!');
+  resetTimer();
+}
+
+function resetTimer() {
+  clearInterval(timer.interval);
+  timer = { phase: 'idle', activeId: null, startedAt: null, totalSeconds: 0, interval: null };
+  const workSec = (parseInt(settings.work_duration) || 25) * 60;
+  document.getElementById('timer-display').textContent = formatTime(workSec);
+  document.getElementById('timer-phase').textContent = 'Ready';
+  renderRing(0, 1, 'idle');
+  setTimerButtons();
+  renderLog();
+}
+
+function setTimerButtons() {
+  document.getElementById('btn-start').style.display = timer.phase === 'idle' ? '' : 'none';
+  document.getElementById('btn-stop').style.display = timer.phase !== 'idle' ? '' : 'none';
+  document.getElementById('btn-skip').style.display = timer.phase === 'break' ? '' : 'none';
+  document.getElementById('task-row').style.display = timer.phase === 'idle' ? '' : 'none';
+}
+
+function renderRing(remaining, total, phase) {
+  const pct = total > 0 ? remaining / total : 0;
+  const offset = CIRCUMFERENCE * (1 - pct);
+  const ring = document.getElementById('ring-progress');
+  ring.style.strokeDashoffset = offset;
+  ring.style.stroke = phase === 'break' ? 'var(--break)' : 'var(--work)';
+  document.getElementById('timer-phase').textContent =
+    phase === 'working' ? 'Focus' : phase === 'break' ? 'Break' : 'Ready';
+}
+
+// ── Pomodoro log ─────────────────────────────────────────────────────────────
+function renderLog() {
+  const completed_count = pomodoros.filter(p => p.completed).length;
+  document.getElementById('pom-count').textContent = completed_count;
+
+  const log = document.getElementById('pom-log');
+  if (!pomodoros.length) { log.innerHTML = '<div class="empty">No sessions yet</div>'; return; }
+
+  log.innerHTML = [...pomodoros].reverse().map(p => {
+    const time = p.started_at.substring(11, 16);
+    const task = p.todo_title || (p.completed ? 'Untitled session' : 'Stopped session');
+    const cls = p.completed ? '' : 'pom-abandoned';
+    const notes = p.notes ? `<div class="pom-entry-notes">${esc(p.notes)}</div>` : '';
+    const tomato = p.completed ? '🍅' : '✕';
+    return `<div class="pom-entry ${cls}">
+      <div class="pom-entry-header">
+        <span class="pom-entry-task">${tomato} ${esc(task)}</span>
+        <span class="pom-entry-time">${time}</span>
+      </div>
+      ${notes}
+    </div>`;
+  }).join('');
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('s-work').value = settings.work_duration || 25;
+  document.getElementById('s-break').value = settings.break_duration || 5;
+  document.getElementById('s-auto-break').checked = settings.auto_break === 'true';
+  document.getElementById('s-vault').value = settings.obsidian_vault_path || '';
+  document.getElementById('s-folder').value = settings.obsidian_daily_notes_folder || 'Daily';
+  document.getElementById('settings-modal').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+
+async function saveSettings() {
+  const updated = {
+    work_duration: document.getElementById('s-work').value,
+    break_duration: document.getElementById('s-break').value,
+    auto_break: document.getElementById('s-auto-break').checked ? 'true' : 'false',
+    obsidian_vault_path: document.getElementById('s-vault').value.trim(),
+    obsidian_daily_notes_folder: document.getElementById('s-folder').value.trim(),
+  };
+  await api('/api/settings', 'PUT', updated);
+  settings = { ...settings, ...updated };
+  closeSettings();
+  applySettings();
+  toast('Settings saved');
+}
+
+// ── Obsidian sync ─────────────────────────────────────────────────────────────
+async function syncObsidian() {
+  try {
+    const res = await api('/api/obsidian/sync', 'POST');
+    toast(`Synced → ${res.path}`);
+  } catch {}
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatTime(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+  const s = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+let toastTimer;
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? '#dc2626' : '#1c1917';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>
