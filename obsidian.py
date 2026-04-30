@@ -12,7 +12,7 @@ def sync_to_daily_note(todos: list, pomodoros: list, vault_path: str, daily_note
 
     lines = [f"# {today}", ""]
 
-    lines.append("## ✅ Today's Tasks")
+    lines.append("## Today's Tasks")
     if todos:
         for todo in todos:
             check = "x" if todo["completed"] else " "
@@ -22,7 +22,7 @@ def sync_to_daily_note(todos: list, pomodoros: list, vault_path: str, daily_note
     lines.append("")
 
     completed_poms = [p for p in pomodoros if p["completed"]]
-    lines.append(f"## 🍅 Pomodoros ({len(completed_poms)})")
+    lines.append(f"## Pomodoros ({len(completed_poms)})")
     if completed_poms:
         lines.append("")
         lines.append("| Time | Duration | Task | Notes |")
