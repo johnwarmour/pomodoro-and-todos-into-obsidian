@@ -20,7 +20,7 @@ pip install fastapi "uvicorn[standard]" python-dotenv pydantic
 Copy `.env.example` to `.env`:
 
 ```
-OBSIDIAN_VAULT_PATH=/Users/jwarmour/Personal
+OBSIDIAN_VAULT_PATH=/Your/Vault/Path
 OBSIDIAN_DAILY_NOTES_FOLDER=Daily
 ```
 
@@ -37,11 +37,11 @@ Open [http://localhost:8000](http://localhost:8000).
 ```markdown
 # 2026-04-26
 
-## ✅ Today's Tasks
+##  Today's Tasks
 - [x] Write unit tests
 - [ ] Review PRs
 
-## 🍅 Pomodoros (3)
+## Pomodoros (3)
 
 | Time | Duration | Task | Notes |
 |------|----------|------|-------|
