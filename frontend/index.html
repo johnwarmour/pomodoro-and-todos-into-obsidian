@@ -178,6 +178,16 @@
     }
     #toast.show { opacity: 1; }
 
+    /* ── Completion date chip ── */
+    .date-chip {
+      display: none; font-size: 0.7rem; color: var(--muted); border: 1px solid var(--border);
+      border-radius: 5px; padding: 1px 4px; background: var(--bg);
+      font-family: inherit; cursor: pointer; flex-shrink: 0;
+      appearance: none; -webkit-appearance: none; width: 5.75rem;
+    }
+    .todo-item:hover .date-chip { display: inline-block; }
+    .date-chip:focus { outline: none; border-color: var(--accent); }
+
     /* ── Done section ── */
     .done-date-label {
       font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
@@ -440,14 +450,30 @@ function todoHTML(t) {
   const done = t.completed ? 'done' : '';
   const moveLabel = t.list === 'today' ? '→ Backlog' : '→ Today';
   const moveDest = t.list === 'today' ? 'backlog' : 'today';
+  const dateChip = t.completed && t.completed_at
+    ? `<input type="date" class="date-chip" value="${t.completed_at.slice(0,10)}"
+         title="Edit completion date"
+         onchange="saveCompletedDate(${t.id}, this.value)"
+         onclick="event.stopPropagation()" />`
+    : '';
+  const moveBtn = !t.completed
+    ? `<button class="icon-btn" onclick="moveTodo(${t.id},'${moveDest}')" title="${moveLabel}">${moveLabel}</button>`
+    : '';
   return `<div class="todo-item">
     <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTodo(${t.id}, this.checked)" />
     <span class="todo-title ${done}">${esc(t.title)}</span>
+    ${dateChip}
     <div class="todo-actions">
-      <button class="icon-btn" onclick="moveTodo(${t.id},'${moveDest}')" title="${moveLabel}">${moveLabel}</button>
+      ${moveBtn}
       <button class="icon-btn del" onclick="deleteTodo(${t.id})" title="Delete">✕</button>
     </div>
   </div>`;
+}
+
+async function saveCompletedDate(id, dateStr) {
+  const updated = await api(`/api/todos/${id}`, 'PUT', { set_completed_at: dateStr + 'T12:00:00' });
+  todos = todos.map(t => t.id === id ? updated : t);
+  renderTodos();
 }
 
 function addTodoKey(e, list) { if (e.key === 'Enter') addTodo(list); }

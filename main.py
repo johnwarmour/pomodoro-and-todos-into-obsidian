@@ -46,6 +46,7 @@ class TodoUpdate(BaseModel):
     list: Optional[str] = None
     completed: Optional[bool] = None
     position: Optional[int] = None
+    set_completed_at: Optional[str] = None  # explicit date override, YYYY-MM-DD
 
 
 @app.get("/api/todos")
@@ -85,6 +86,8 @@ def update_todo(todo_id: int, todo: TodoUpdate):
             if todo.completed is not None:
                 updates["completed"] = 1 if todo.completed else 0
                 updates["completed_at"] = datetime.now().isoformat() if todo.completed else None
+            if todo.set_completed_at is not None:
+                updates["completed_at"] = todo.set_completed_at
             if todo.position is not None:
                 updates["position"] = todo.position
             if updates:
