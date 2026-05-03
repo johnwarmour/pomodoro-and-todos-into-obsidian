@@ -178,6 +178,12 @@
     }
     #toast.show { opacity: 1; }
 
+    /* ── Done section ── */
+    .done-date-label {
+      font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); margin: 0.75rem 0 0.25rem;
+    }
+
     /* ── Misc ── */
     .empty { font-size: 0.8rem; color: var(--muted); text-align: center; padding: 1rem 0; }
     hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
@@ -223,6 +229,15 @@
         <button class="btn btn-sm" onclick="addTodo('backlog')">+</button>
       </div>
       <div id="backlog-list"></div>
+
+      <div id="done-section" style="display:none">
+        <hr class="divider" />
+        <div class="section-head">
+          <span class="section-label">Done</span>
+          <span class="badge" id="done-count">0</span>
+        </div>
+        <div id="done-list"></div>
+      </div>
     </div>
   </div>
 
@@ -373,15 +388,52 @@ async function api(path, method = 'GET', body = null) {
 
 // ── Todos ────────────────────────────────────────────────────────────────────
 function renderTodos() {
-  const today = todos.filter(t => t.list === 'today');
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const todayIncomplete = todos.filter(t => t.list === 'today' && !t.completed);
+  const todayDoneToday  = todos.filter(t =>
+    t.list === 'today' && t.completed &&
+    t.completed_at && t.completed_at.slice(0, 10) === todayStr
+  );
+  const todayItems = [...todayIncomplete, ...todayDoneToday];
+
   const backlog = todos.filter(t => t.list === 'backlog');
-  document.getElementById('today-count').textContent = today.length;
-  document.getElementById('backlog-count').textContent = backlog.length;
-  document.getElementById('today-list').innerHTML = today.map(todoHTML).join('');
-  document.getElementById('backlog-list').innerHTML = backlog.map(todoHTML).join('');
-  if (!today.length) document.getElementById('today-list').innerHTML = '<div class="empty">Nothing yet</div>';
-  if (!backlog.length) document.getElementById('backlog-list').innerHTML = '<div class="empty">Nothing yet</div>';
+
+  // Todos completed on a previous day go to Done
+  const doneOld = todos.filter(t =>
+    t.completed && t.completed_at && t.completed_at.slice(0, 10) < todayStr
+  );
+
+  document.getElementById('today-count').textContent = todayIncomplete.length;
+  document.getElementById('backlog-count').textContent = backlog.filter(t => !t.completed).length;
+  document.getElementById('today-list').innerHTML = todayItems.map(todoHTML).join('') || '<div class="empty">Nothing yet</div>';
+  document.getElementById('backlog-list').innerHTML = backlog.map(todoHTML).join('') || '<div class="empty">Nothing yet</div>';
+
+  renderDone(doneOld);
   updateTaskSelect();
+}
+
+function renderDone(items) {
+  const section = document.getElementById('done-section');
+  if (!items.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  document.getElementById('done-count').textContent = items.length;
+
+  // Group by completion date, most recent first
+  const groups = {};
+  items.forEach(t => {
+    const d = t.completed_at.slice(0, 10);
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(t);
+  });
+
+  const html = Object.keys(groups).sort().reverse().map(d => {
+    const label = new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `<div class="done-date-label">${label}</div>` +
+      groups[d].map(t => todoHTML(t)).join('');
+  }).join('');
+
+  document.getElementById('done-list').innerHTML = html;
 }
 
 function todoHTML(t) {
