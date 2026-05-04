@@ -18,6 +18,7 @@
       --accent: #2563eb;
       --radius: 12px;
       --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+      --tab-h: 60px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -34,6 +35,7 @@
     }
     header h1 { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
     .header-right { display: flex; gap: 0.5rem; align-items: center; }
+    .header-label { display: inline; }
 
     /* ── Layout ── */
     .app { display: grid; grid-template-columns: 270px 1fr 270px; flex: 1; overflow: hidden; }
@@ -41,6 +43,9 @@
     .panel-scroll { flex: 1; overflow-y: auto; padding: 1rem; }
     .panel-left { border-right: 1px solid var(--border); }
     .panel-right { border-left: 1px solid var(--border); }
+
+    /* ── Mobile tab bar ── */
+    .tab-bar { display: none; }
 
     /* ── Buttons ── */
     .btn {
@@ -87,10 +92,10 @@
       cursor: default;
     }
     .todo-item:hover { background: var(--bg); }
-    .todo-item input[type=checkbox] { cursor: pointer; flex-shrink: 0; }
+    .todo-item input[type=checkbox] { cursor: pointer; flex-shrink: 0; width: 18px; height: 18px; }
     .todo-title {
       flex: 1; font-size: 0.85rem; line-height: 1.35;
-      cursor: default; word-break: break-word;
+      cursor: default; word-break: break-word; min-width: 0;
     }
     .todo-title.done { text-decoration: line-through; color: var(--muted); }
     .todo-actions { display: none; gap: 0.2rem; flex-shrink: 0; }
@@ -101,6 +106,22 @@
     }
     .icon-btn:hover { color: var(--accent); background: var(--border); }
     .icon-btn.del:hover { color: var(--work); }
+
+    /* ── Completion date chip ── */
+    .date-chip {
+      display: none; font-size: 0.7rem; color: var(--muted); border: 1px solid var(--border);
+      border-radius: 5px; padding: 1px 4px; background: var(--bg);
+      font-family: inherit; cursor: pointer; flex-shrink: 0;
+      appearance: none; -webkit-appearance: none; width: 5.75rem;
+    }
+    .todo-item:hover .date-chip { display: inline-block; }
+    .date-chip:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Done section ── */
+    .done-date-label {
+      font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); margin: 0.75rem 0 0.25rem;
+    }
 
     /* ── Timer panel ── */
     .timer-panel {
@@ -178,25 +199,87 @@
     }
     #toast.show { opacity: 1; }
 
-    /* ── Completion date chip ── */
-    .date-chip {
-      display: none; font-size: 0.7rem; color: var(--muted); border: 1px solid var(--border);
-      border-radius: 5px; padding: 1px 4px; background: var(--bg);
-      font-family: inherit; cursor: pointer; flex-shrink: 0;
-      appearance: none; -webkit-appearance: none; width: 5.75rem;
-    }
-    .todo-item:hover .date-chip { display: inline-block; }
-    .date-chip:focus { outline: none; border-color: var(--accent); }
-
-    /* ── Done section ── */
-    .done-date-label {
-      font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.07em; color: var(--muted); margin: 0.75rem 0 0.25rem;
-    }
-
     /* ── Misc ── */
     .empty { font-size: 0.8rem; color: var(--muted); text-align: center; padding: 1rem 0; }
     hr.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
+
+    /* ══════════════════════════════════════════════
+       MOBILE  (≤ 768px)
+    ══════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      body { overflow: hidden; }
+
+      /* Header collapses to icon-only buttons */
+      .header-label { display: none; }
+      .btn-sm { padding: 0.5rem 0.6rem; font-size: 1rem; }
+
+      /* Single-column: panels stacked, only active one visible */
+      .app {
+        display: block; flex: 1; overflow: hidden;
+        padding-bottom: var(--tab-h);
+      }
+      .panel {
+        position: absolute; inset: 0; bottom: var(--tab-h);
+        top: 57px; /* header height */
+        background: var(--bg); visibility: hidden; pointer-events: none;
+        transition: opacity 0.15s;
+        opacity: 0;
+      }
+      .panel.active {
+        visibility: visible; pointer-events: auto; opacity: 1;
+      }
+      .panel-left, .panel-right { border: none; }
+
+      /* Timer panel fills its area */
+      .timer-panel {
+        height: 100%; justify-content: center;
+        padding: 1rem 1.5rem;
+      }
+
+      /* Scale the ring down for narrow screens */
+      .timer-ring svg { width: 180px; height: 180px; }
+      .timer-ring svg circle { cx: 90; cy: 90; r: 78; }
+      .timer-time { font-size: 2.2rem; }
+
+      /* Bigger touch targets for todos */
+      .todo-item { padding: 0.6rem 0.4rem; }
+      .todo-item input[type=checkbox] { width: 22px; height: 22px; }
+      .todo-title { font-size: 0.9rem; }
+
+      /* Always-visible actions on mobile (no hover) */
+      .todo-actions { display: flex; }
+      .date-chip { display: inline-block; }
+      .icon-btn { padding: 4px 8px; font-size: 0.8rem; }
+
+      /* Bigger add-row inputs */
+      .add-row input { padding: 0.55rem 0.75rem; font-size: 0.9rem; }
+
+      /* Task select full width */
+      .task-row { max-width: 100%; }
+
+      /* Modal full-width on mobile */
+      .modal { width: calc(100vw - 2rem); }
+
+      /* Toast above tab bar */
+      #toast { bottom: calc(var(--tab-h) + 0.75rem); }
+
+      /* Tab bar */
+      .tab-bar {
+        display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+        height: var(--tab-h); background: var(--surface);
+        border-top: 1px solid var(--border); z-index: 20;
+      }
+      .tab-btn {
+        flex: 1; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 3px; border: none; background: none;
+        color: var(--muted); font-family: inherit; cursor: pointer;
+        font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.05em; transition: color 0.12s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .tab-btn .tab-icon { font-size: 1.4rem; line-height: 1; }
+      .tab-btn.active { color: var(--accent); }
+    }
   </style>
 </head>
 <body>
@@ -205,8 +288,8 @@
 <header>
   <h1>🍅 Focus</h1>
   <div class="header-right">
-    <button class="btn btn-sm" onclick="openSettings()">⚙ Settings</button>
-    <button class="btn btn-sm btn-primary" onclick="syncObsidian()">↑ Sync to Obsidian</button>
+    <button class="btn btn-sm" onclick="openSettings()">⚙<span class="header-label"> Settings</span></button>
+    <button class="btn btn-sm btn-primary" onclick="syncObsidian()">↑<span class="header-label"> Sync to Obsidian</span></button>
   </div>
 </header>
 
@@ -214,7 +297,7 @@
 <div class="app">
 
   <!-- Left: Todos -->
-  <div class="panel panel-left">
+  <div class="panel panel-left active" id="panel-tasks">
     <div class="panel-scroll">
       <!-- Today -->
       <div class="section-head">
@@ -252,7 +335,7 @@
   </div>
 
   <!-- Center: Timer -->
-  <div class="panel timer-panel">
+  <div class="panel timer-panel" id="panel-timer">
     <!-- Ring -->
     <div class="timer-ring">
       <svg width="220" height="220" viewBox="0 0 220 220">
@@ -289,7 +372,7 @@
   </div>
 
   <!-- Right: Pomodoro log -->
-  <div class="panel panel-right">
+  <div class="panel panel-right" id="panel-log">
     <div class="panel-scroll">
       <div class="section-head" style="margin-top:0">
         <span class="section-label">Today's Log</span>
@@ -298,6 +381,19 @@
     </div>
   </div>
 </div>
+
+<!-- Mobile tab bar -->
+<nav class="tab-bar">
+  <button class="tab-btn active" id="tab-tasks" onclick="showTab('tasks')">
+    <span class="tab-icon">✅</span>Tasks
+  </button>
+  <button class="tab-btn" id="tab-timer" onclick="showTab('timer')">
+    <span class="tab-icon">🍅</span>Timer
+  </button>
+  <button class="tab-btn" id="tab-log" onclick="showTab('log')">
+    <span class="tab-icon">📋</span>Log
+  </button>
+</nav>
 
 <!-- Notes modal (after work session) -->
 <div class="overlay" id="notes-modal">
@@ -357,12 +453,13 @@ let todos = [];
 let pomodoros = [];
 let settings = {};
 let timer = {
-  phase: 'idle',       // idle | working | break
-  activeId: null,      // pomodoro DB id
-  startedAt: null,     // Date object
+  phase: 'idle',
+  activeId: null,
+  startedAt: null,
   totalSeconds: 0,
   interval: null,
 };
+let activeTab = 'tasks';
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function boot() {
@@ -374,13 +471,21 @@ async function boot() {
   applySettings();
 
   if (active && !active.completed_at) {
-    // Restore active pomodoro timer
     timer.activeId = active.id;
     timer.startedAt = new Date(active.started_at);
     timer.totalSeconds = active.duration_minutes * 60;
     timer.phase = 'working';
     startTick();
   }
+}
+
+// ── Tabs (mobile) ─────────────────────────────────────────────────────────────
+function showTab(tab) {
+  activeTab = tab;
+  ['tasks', 'timer', 'log'].forEach(t => {
+    document.getElementById(`panel-${t === 'tasks' ? 'tasks' : t === 'timer' ? 'timer' : 'log'}`).classList.toggle('active', t === tab);
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+  });
 }
 
 // ── API ──────────────────────────────────────────────────────────────────────
@@ -406,10 +511,7 @@ function renderTodos() {
     t.completed_at && t.completed_at.slice(0, 10) === todayStr
   );
   const todayItems = [...todayIncomplete, ...todayDoneToday];
-
   const backlog = todos.filter(t => t.list === 'backlog');
-
-  // Todos completed on a previous day go to Done
   const doneOld = todos.filter(t =>
     t.completed && t.completed_at && t.completed_at.slice(0, 10) < todayStr
   );
@@ -429,7 +531,6 @@ function renderDone(items) {
   section.style.display = '';
   document.getElementById('done-count').textContent = items.length;
 
-  // Group by completion date, most recent first
   const groups = {};
   items.forEach(t => {
     const d = t.completed_at.slice(0, 10);
@@ -449,7 +550,7 @@ function renderDone(items) {
 function todoHTML(t) {
   const done = t.completed ? 'done' : '';
   const moveLabel = t.list === 'today' ? '→ Backlog' : '→ Today';
-  const moveDest = t.list === 'today' ? 'backlog' : 'today';
+  const moveDest  = t.list === 'today' ? 'backlog'   : 'today';
   const dateChip = t.completed && t.completed_at
     ? `<input type="date" class="date-chip" value="${t.completed_at.slice(0,10)}"
          title="Edit completion date"
@@ -540,17 +641,13 @@ async function startPomodoro() {
 function stopPomodoro() {
   if (timer.phase === 'working' && timer.activeId) {
     api(`/api/pomodoros/${timer.activeId}/abandon`, 'PUT').then(() => {
-      pomodoros = pomodoros.filter(p => p.id !== timer.activeId);
-      // Add abandoned entry for log
       api('/api/pomodoros/today').then(p => { pomodoros = p; renderLog(); });
     });
   }
   resetTimer();
 }
 
-function skipBreak() {
-  resetTimer();
-}
+function skipBreak() { resetTimer(); }
 
 function startTick() {
   clearInterval(timer.interval);
@@ -562,7 +659,6 @@ function startTick() {
 function tick() {
   const elapsed = (Date.now() - timer.startedAt) / 1000;
   const remaining = timer.totalSeconds - elapsed;
-
   if (remaining <= 0) {
     clearInterval(timer.interval);
     if (timer.phase === 'working') onWorkComplete();
@@ -578,6 +674,8 @@ function updateTimerUI() { tick(); }
 function onWorkComplete() {
   document.getElementById('notes-modal').classList.add('open');
   document.getElementById('notes-input').value = '';
+  // Bring timer tab into view on mobile so the modal context is clear
+  if (window.innerWidth <= 768) showTab('timer');
 }
 
 async function savePomodoro(withNotes) {
@@ -588,13 +686,8 @@ async function savePomodoro(withNotes) {
   pomodoros.push(updated);
   renderLog();
   toast('🍅 Pomodoro saved!');
-
-  const autoBreak = settings.auto_break === 'true';
-  if (autoBreak) {
-    startBreak();
-  } else {
-    resetTimer();
-  }
+  if (settings.auto_break === 'true') startBreak();
+  else resetTimer();
 }
 
 function startBreak() {
@@ -624,9 +717,9 @@ function resetTimer() {
 
 function setTimerButtons() {
   document.getElementById('btn-start').style.display = timer.phase === 'idle' ? '' : 'none';
-  document.getElementById('btn-stop').style.display = timer.phase !== 'idle' ? '' : 'none';
-  document.getElementById('btn-skip').style.display = timer.phase === 'break' ? '' : 'none';
-  document.getElementById('task-row').style.display = timer.phase === 'idle' ? '' : 'none';
+  document.getElementById('btn-stop').style.display  = timer.phase !== 'idle' ? '' : 'none';
+  document.getElementById('btn-skip').style.display  = timer.phase === 'break' ? '' : 'none';
+  document.getElementById('task-row').style.display  = timer.phase === 'idle' ? '' : 'none';
 }
 
 function renderRing(remaining, total, phase) {
@@ -719,7 +812,6 @@ function toast(msg, isError = false) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 boot();
 </script>
 </body>
