@@ -75,9 +75,6 @@ def create_todo(todo: TodoCreate):
 def update_todo(todo_id: int, todo: TodoUpdate):
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT 1 FROM todos WHERE id = %s", (todo_id,))
-            if not cur.fetchone():
-                raise HTTPException(404, "Todo not found")
             updates: dict = {}
             if todo.title is not None:
                 updates["title"] = todo.title
@@ -97,7 +94,10 @@ def update_todo(todo_id: int, todo: TodoUpdate):
                     [*updates.values(), todo_id],
                 )
             cur.execute("SELECT * FROM todos WHERE id = %s", (todo_id,))
-            return dict(cur.fetchone())
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(404, "Todo not found")
+            return dict(row)
 
 
 @app.delete("/api/todos/{todo_id}")
