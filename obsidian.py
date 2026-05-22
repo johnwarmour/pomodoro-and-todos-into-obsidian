@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 
@@ -25,7 +25,7 @@ def _build_poms_block(pomodoros: list) -> list[str]:
         lines.append("| Time | Duration | Task | Notes |")
         lines.append("|------|----------|------|-------|")
         for p in completed:
-            time_str = p["started_at"][11:16]
+            time_str = datetime.fromisoformat(p["started_at"]).strftime("%-I:%M %p")
             task = p["todo_title"] or "—"
             notes = (p["notes"] or "—").replace("\n", " ")
             lines.append(f"| {time_str} | {p['duration_minutes']} min | {task} | {notes} |")
